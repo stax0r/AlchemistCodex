@@ -361,8 +361,8 @@ function initApp() {
         <input type="text" id="admin-rec-name" placeholder="Potion Name" required class="w-full bg-zinc-950 border border-red-950 rounded px-3 py-2 text-xs text-red-100">
 
         <div class="space-y-2">
-            <p class="text-xs text-red-300">Ingredients (up to 4):</p>
-            ${[1, 2, 3, 4].map(i => `
+            <p class="text-xs text-red-300">Ingredients (up to 6):</p>
+            ${[1, 2, 3, 4, 5, 6].map(i => `
                 <div class="flex gap-2">
                     <select id="admin-rec-ing-${i}" class="w-2/3 bg-zinc-950 border border-red-950 rounded px-2 py-1.5 text-xs text-red-100">
                         <option value="">Select Ingredient ${i}...</option>
