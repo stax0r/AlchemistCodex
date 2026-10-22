@@ -409,7 +409,7 @@ function initApp() {
             } else if (type === "recipes") {
                 targetRef = `recipes/${id}`;
                 const ingredients = {};
-                for (let i = 1; i <= 4; i++) {
+                for (let i = 1; i <= 6; i++) {
                     const ingId = document.getElementById(`admin-rec-ing-${i}`)?.value;
                     const qty = parseInt(document.getElementById(`admin-rec-qty-${i}`)?.value) || 1;
                     if (ingId) {
