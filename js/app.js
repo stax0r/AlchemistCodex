@@ -56,6 +56,51 @@ function showToast(message, type = 'success') {
     }, 3500);
 }
 
+function showRecipesForIngredient(ingId, ingName) {
+    const recipesUsingIng = Object.entries(state.cachedRecipes).filter(([recId, rec]) => {
+        return rec.ingredients && rec.ingredients[ingId];
+    });
+
+    if (recipesUsingIng.length === 0) {
+        showToast(`${ingName} is not used in any known potions.`, 'info');
+        return;
+    }
+
+    const listHtml = recipesUsingIng.map(([recId, rec]) => {
+        return `
+            <li class="text-xs text-red-200 py-2 border-b border-red-950/50 last:border-0 flex justify-between items-center">
+                <span class="font-bold">${rec.name}</span>
+                <span class="text-[10px] bg-zinc-950 border border-red-950 px-2 py-0.5 rounded text-red-400">Qty: ${rec.ingredients[ingId]}</span>
+            </li>`;
+    }).join('');
+
+    let modal = document.getElementById('recipe-info-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'recipe-info-modal';
+        modal.className = 'fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 backdrop-blur-sm hidden';
+        document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+        <div class="bg-zinc-900 border border-red-950 rounded-xl p-6 max-w-sm w-full space-y-4 shadow-2xl relative" onclick="event.stopPropagation()">
+            <button onclick="document.getElementById('recipe-info-modal').classList.add('hidden')" class="btn-close-modal">✕</button>
+            <div class="border-b border-red-950 pb-2 pr-6">
+                <h2 class="text-lg font-bold text-red-100 flex items-center gap-2">
+                    ⚗️ Potions using ${ingName}
+                </h2>
+            </div>
+            <ul class="max-h-64 overflow-y-auto pr-1 space-y-1">
+                ${listHtml}
+            </ul>
+        </div>
+    `;
+    
+    // Close modal when clicking on the backdrop
+    modal.onclick = () => modal.classList.add('hidden');
+    modal.classList.remove('hidden');
+}
+
 function populateDropdowns() {
     // Sorted Ingredients
     const sortedIngredients = Object.entries(state.cachedIngredients)
@@ -166,7 +211,6 @@ function renderCatalog() {
             : offers.map((offer, idx) => {
                 const loc = state.cachedLocations[offer.locationId] || { hold: "Unknown", town: "Unknown" };
                 
-                // Format date as "Short Month Day" (e.g., "Oct 24")
                 const updatedDate = offer.updatedAt 
                     ? new Date(offer.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                     : '';
@@ -181,22 +225,34 @@ function renderCatalog() {
                     </div>`;
             }).join("");
 
-        // Apply greyed out styles if the ingredient is not in any recipe
         const cardStyle = isUsedInRecipe
             ? 'bg-zinc-950/60 border-red-950 text-red-100'
             : 'bg-zinc-950/20 border-zinc-900/50 opacity-50 grayscale';
 
         return `
         <div class="border rounded-lg p-4 space-y-2 flex flex-col h-48 transition-all ${cardStyle}">
-        <div class="flex justify-between items-center border-b border-red-950/50 pb-1 flex-shrink-0">
-            <h3 class="font-bold text-xs">${ing.name} ${!isUsedInRecipe ? '<span class="text-[10px] text-zinc-500 font-normal italic">(Unused)</span>' : ''}</h3>
-            ${ing.suggestedPrice !== undefined && ing.suggestedPrice !== null
-                ? `<span class="text-[10px] text-zinc-400 font-mono bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded" title="Base Suggested Price">~${ing.suggestedPrice}g</span>`
-                : ''}
-        </div>
-        <div class="space-y-1 overflow-y-auto pr-1 flex-1">${offersHtml}</div>
-    </div>`;
+            <div class="ingredient-header flex justify-between items-center border-b border-red-950/50 pb-1 flex-shrink-0 cursor-pointer hover:text-red-300 transition-colors group" 
+                 data-id="${ingId}" 
+                 data-name="${ing.name.replace(/"/g, '&quot;')}">
+                <h3 class="font-bold text-xs group-hover:underline decoration-red-900/50 underline-offset-2" title="Click to view craftable potions">
+                    ${ing.name} ${!isUsedInRecipe ? '<span class="text-[10px] text-zinc-500 font-normal italic no-underline">(Unused)</span>' : ''}
+                </h3>
+                ${ing.suggestedPrice !== undefined && ing.suggestedPrice !== null
+                    ? `<span class="text-[10px] text-zinc-400 font-mono bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded" title="Base Suggested Price">~${ing.suggestedPrice}g</span>`
+                    : ''}
+            </div>
+            <div class="space-y-1 overflow-y-auto pr-1 flex-1">${offersHtml}</div>
+        </div>`;
     }).join("");
+
+    // Attach click listeners to ingredient headers to open the recipes modal
+    container.querySelectorAll('.ingredient-header').forEach(header => {
+        header.addEventListener('click', (e) => {
+            const ingId = e.currentTarget.getAttribute('data-id');
+            const ingName = e.currentTarget.getAttribute('data-name');
+            showRecipesForIngredient(ingId, ingName);
+        });
+    });
 }
 
 function runOptimization() {
